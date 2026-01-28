@@ -2,6 +2,8 @@ fastapi
 uvicorn
 feedparser
 newspaper3k
-transformers
 torch
 lxml_html_clean
+transformers==4.38.2
+huggingface-hub
+accelerate
