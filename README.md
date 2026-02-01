@@ -5,9 +5,9 @@
 **NewsSense** is an AI-based news summarization agent that automatically reads the latest news articles and generates short, easy-to-read summaries.
 
 The main goal of this project is to:
-- pull real news from RSS feeds,
-- clean and extract the actual article content,
-- and summarize long articles into short summaries (around 60–120 words).
+- Pull real news from RSS feeds,
+- Clean and extract the actual article content,
+- And summarize long articles into short summaries (around 60–120 words).
 
 This project is built to **simulate a real-world AI pipeline**, not just a notebook demo.  
 It focuses on handling messy data, unreliable news sources, and deciding **when NOT to summarize**, which is a real challenge in production systems.
@@ -117,3 +117,4 @@ The focus is on **engineering decisions**, not just model output.
 pip install -r requirements.txt
 python run_agent.py
 THIS PROJECT IS UNDER CONSTRUCTION🚧 
+
