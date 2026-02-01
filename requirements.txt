@@ -7,3 +7,6 @@ lxml_html_clean
 transformers==4.38.2
 huggingface-hub
 accelerate
+readability-lxml 
+beautifulsoup4
+sentencepiece
