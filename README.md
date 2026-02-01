@@ -111,10 +111,20 @@ The focus is on **engineering decisions**, not just model output.
 
 ---
 
+THIS PROJECT IS UNDER CONSTRUCTION 🚧 ⚠ 
+
 ## How to run
 
 ```bash
 pip install -r requirements.txt
 python run_agent.py
-THIS PROJECT IS UNDER CONSTRUCTION🚧 
+```
+---
+
+## Author
+
+Built by **Rohan**
+AI / Data Science enthusiast
+
+
 
