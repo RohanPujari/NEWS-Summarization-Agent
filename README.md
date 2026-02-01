@@ -123,7 +123,7 @@ python run_agent.py
 
 ## Author
 
-Built by **Rohan**
+Built by **Rohan**, 
 AI / Data Science enthusiast
 
 
