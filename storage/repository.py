@@ -28,7 +28,7 @@ class ArticleRepository:
         conn.commit()
         conn.close()
 
-    def fetch_latest(self, limit=10):
+    def fetch_latest(self, limit=10, offset=0):
         conn = get_connection()
         cursor = conn.cursor()
 
@@ -36,8 +36,8 @@ class ArticleRepository:
             SELECT title, summary, published_at
             FROM articles
             ORDER BY created_at DESC
-            LIMIT ?
-        """, (limit,))
+            LIMIT ? OFFSET ?
+        """, (limit, offset))
 
         rows = cursor.fetchall()
         conn.close()
