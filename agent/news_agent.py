@@ -31,7 +31,7 @@ class NewsAgent:
                 print("[AGENT] Skipping (already stored)")
                 continue
 
-            text = self.cleaner.extract(url)
+            text, image_url = self.cleaner.extract(url)
             print(f"[AGENT] Extracted words: {len(text.split())}")
 
             if not text:
@@ -43,8 +43,8 @@ class NewsAgent:
             if not summary:
                 print("[AGENT] Skipping: summary empty")
                 continue
-            
-            self.repo.save(title=title, url=url, summary=summary, published_at=article.get("published"))
+
+            self.repo.save(title=title, url=url, summary=summary, image_url=image_url, published_at=article.get("published"))
             print("[AGENT] Saved article")
             
             results.append({

@@ -19,6 +19,7 @@ def init_db():
             url TEXT NOT NULL UNIQUE,
             summary TEXT NOT NULL,
             published_at TEXT,
+            image_url TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)

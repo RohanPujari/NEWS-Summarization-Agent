@@ -16,14 +16,14 @@ class ArticleRepository:
 
         return result is not None
 
-    def save(self, title, url, summary, published_at):
+    def save(self, title, url, summary, image_url, published_at):
         conn = get_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
-            INSERT INTO articles (title, url, summary, published_at)
-            VALUES (?, ?, ?, ?)
-        """, (title, url, summary, published_at))
+            INSERT INTO articles (title, url, summary, image_url, published_at)
+            VALUES (?, ?, ?, ?, ?)
+        """, (title, url, summary, image_url, published_at))
 
         conn.commit()
         conn.close()
@@ -33,7 +33,7 @@ class ArticleRepository:
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT title, summary, published_at
+            SELECT title, summary, image_url, published_at
             FROM articles
             ORDER BY created_at DESC
             LIMIT ? OFFSET ?
