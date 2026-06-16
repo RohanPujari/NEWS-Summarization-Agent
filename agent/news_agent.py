@@ -1,6 +1,7 @@
 from ingestion.rss_fetcher import RSSFetcher
 from processing.cleaner import ArticleCleaner
-from processing.summarizer import PegasusSummarizer
+# from processing.summarizer import PegasusSummarizer # use this for pegasus summarizer
+from processing.summarizer import NewsSummarizer # use this for claude summarizer
 from storage.db import init_db
 from storage.repository import ArticleRepository
 
@@ -11,7 +12,7 @@ class NewsAgent:
     def __init__(self, feed_url: str):
         self.fetcher = RSSFetcher(feed_url)
         self.cleaner = ArticleCleaner()
-        self.summarizer = PegasusSummarizer()
+        self.summarizer = NewsSummarizer()
         self.repo = ArticleRepository()
 
 
@@ -31,14 +32,25 @@ class NewsAgent:
                 print("[AGENT] Skipping (already stored)")
                 continue
 
-            text, image_url = self.cleaner.extract(url)
+            result = self.cleaner.extract(url)            
+            # Take first two values from result
+            if isinstance(result, tuple) and len(result) >= 2:
+                text = result[0]
+                image_url = result[1]
+            else:
+                text = result
+                image_url = None
             print(f"[AGENT] Extracted words: {len(text.split())}")
 
             if not text:
                 print("[AGENT] Skipping: empty text")
                 continue
 
-            summary = self.summarizer.summarize(text)
+            result = self.summarizer.summarize(
+                title=article['title'],
+                content=text
+            )
+            summary = result['summary']
 
             if not summary:
                 print("[AGENT] Skipping: summary empty")

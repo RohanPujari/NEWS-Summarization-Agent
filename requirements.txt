@@ -10,3 +10,5 @@ accelerate
 readability-lxml 
 beautifulsoup4
 sentencepiece
+dotenv
+anthropic
