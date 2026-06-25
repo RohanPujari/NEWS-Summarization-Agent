@@ -1,5 +1,4 @@
 import requests
-import anthropic
 import os
 from dotenv import load_dotenv
 
@@ -7,21 +6,21 @@ load_dotenv()
 
 class NewsAgent:
     def __init__(self):
-        self.client = anthropic.Anthropic()
-        self.api_key = os.getenv("NEWS_API_KEY")
+        self.api_key = os.getenv("ANTHROPIC_API_KEY")
+        self.news_api_key = os.getenv("NEWS_API_KEY")
     
     def run(self, limit=10):
-        """Fetch and summarize news from NewsAPI"""
+        """Fetch and summarize news"""
         
-        if not self.api_key:
-            print("[ERROR] NEWS_API_KEY not in .env")
+        if not self.news_api_key:
+            print("[ERROR] NEWS_API_KEY not found")
             return 0
         
         url = "https://newsapi.org/v2/top-headlines"
         params = {
             "country": "us",
             "pageSize": limit,
-            "apiKey": self.api_key
+            "apiKey": self.news_api_key
         }
         
         try:
@@ -39,15 +38,12 @@ class NewsAgent:
                 if not content or len(content) < 50:
                     continue
                 
-                print(f"\n[AGENT] Processing: {title}")
-                
                 summary = self._summarize(title, content)
                 
                 if summary:
-                    print(f"[AGENT] Summary: {summary[:80]}...")
                     count += 1
             
-            print(f"\n===== TOTAL: {count} summaries =====")
+            print(f"[AGENT] Generated {count} summaries")
             return count
         
         except Exception as e:
@@ -58,7 +54,11 @@ class NewsAgent:
         """Summarize using Claude"""
         
         try:
-            message = self.client.messages.create(
+            import anthropic
+            
+            client = anthropic.Anthropic(api_key=self.api_key)
+            
+            message = client.messages.create(
                 model="claude-opus-4-6",
                 max_tokens=256,
                 messages=[{
