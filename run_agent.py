@@ -1,13 +1,9 @@
 from agent.news_agent import NewsAgent
 
-FEED_URL = "https://feeds.bbci.co.uk/news/rss.xml"  # keep BBC for now
-
-agent = NewsAgent(FEED_URL)
+agent = NewsAgent()
 results = agent.run(limit=5)
+print(f"Done! Generated {results} summaries")
 
-print("\n===== PIPELINE RESULT =====")
-print("Total summaries generated:", len(results))
-
-for r in results:
-    print("\nTITLE:", r["title"])
-    print("SUMMARY:", r["summary"][:200], "...")
+if __name__ == "__main__":
+    agent = NewsAgent()
+    agent.run(limit=10)
