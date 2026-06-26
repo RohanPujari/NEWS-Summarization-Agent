@@ -1,75 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>AI News Swipe</title>
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-body {
-    background: black;
-    overflow: hidden;
-}
-
-.card {
-    transition: transform 0.5s ease, opacity 0.5s ease;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Summarizer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        header { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; text-align: center; }
+        h1 { color: #667eea; margin-bottom: 10px; }
+        .controls { display: flex; gap: 10px; margin: 20px 0; }
+        input { flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 5px; }
+        input:focus { outline: none; border-color: #667eea; }
+        button { padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #5568d3; }
+        .article-card { background: white; padding: 25px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .article-card:hover { transform: translateY(-5px); box-shadow: 0 8px 12px rgba(0,0,0,0.15); }
+        .article-title { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+        .article-meta { font-size: 12px; color: #999; margin-bottom: 15px; }
+        .article-summary { color: #666; line-height: 1.6; margin-bottom: 15px; }
+        .article-footer { display: flex; gap: 10px; border-top: 1px solid #eee; padding-top: 15px; }
+        .read-more { color: #667eea; text-decoration: none; font-weight: 500; }
+        .star { cursor: pointer; font-size: 16px; margin-left: 5px; }
+        .star.active { color: #ffc107; }
+        .loading { text-align: center; padding: 40px; color: white; }
+        .empty { text-align: center; padding: 40px; background: white; border-radius: 10px; color: #999; }
+        @media (max-width: 600px) { .controls { flex-direction: column; } }
+    </style>
 </head>
-
-<body class="text-white flex items-center justify-center h-screen">
-
-<div id="card-container" class="w-full max-w-xl h-[85vh] relative">
-</div>
-
-<script>
-let articles = [];
-let currentIndex = 0;
-
-async function loadArticles() {
-    const response = await fetch("http://127.0.0.1:8000/articles?limit=20");
-    const data = await response.json();
-    articles = data.articles;
-    showArticle();
-}
-
-function showArticle() {
-    const container = document.getElementById("card-container");
-    container.innerHTML = "";
-
-    if (currentIndex >= articles.length) return;
-
-    const article = articles[currentIndex];
-
-    const card = document.createElement("div");
-    card.className = "card absolute w-full h-full bg-gray-900 rounded-2xl shadow-2xl overflow-hidden";
-
-    card.innerHTML = `
-        <div class="h-1/2 bg-cover bg-center"
-             style="background-image: url('${article.image_url || "https://via.placeholder.com/600x400"}')">
+<body>
+    <div class="container">
+        <header>
+            <h1>📰 News Summarizer</h1>
+            <p>AI-powered news summaries updated every 2 hours</p>
+        </header>
+        
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Search articles...">
+            <button onclick="fetchNow()">Fetch Now</button>
         </div>
-        <div class="p-6 overflow-y-auto h-1/2">
-            <h2 class="text-2xl font-bold mb-3">${article.title}</h2>
-            <p class="text-gray-300">${article.summary}</p>
-        </div>
-    `;
-
-    container.appendChild(card);
-}
-
-document.addEventListener("keydown", function(event) {
-    if (event.key === "ArrowRight") {
-        currentIndex++;
-        showArticle();
-    }
-    if (event.key === "ArrowLeft" && currentIndex > 0) {
-        currentIndex--;
-        showArticle();
-    }
-});
-
-loadArticles();
-</script>
-
+        
+        <div id="loading" class="loading" style="display: none;">Loading...</div>
+        <div id="articles"></div>
+        <div id="empty" class="empty" style="display: none;">No articles found</div>
+    </div>
+    
+    <script>
+        async function loadArticles(search = '') {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('articles').innerHTML = '';
+            
+            try {
+                const url = `/api/articles${search ? '?search=' + search : ''}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                if (!data.articles || data.articles.length === 0) {
+                    document.getElementById('empty').style.display = 'block';
+                    return;
+                }
+                
+                const html = data.articles.map(a => `
+                    <div class="article-card">
+                        <h2 class="article-title">${a.title}</h2>
+                        <div class="article-meta">${a.source} • ${new Date(a.published_at).toLocaleDateString()}</div>
+                        <p class="article-summary">${a.summary}</p>
+                        <div class="article-footer">
+                            <a href="${a.url}" target="_blank" class="read-more">Read More →</a>
+                            <div onclick="rate(event, ${a.id})">
+                                ${[1,2,3,4,5].map(i => `<span class="star" data-rating="${i}">★</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('articles').innerHTML = html;
+            } catch (e) {
+                document.getElementById('loading').innerHTML = 'Error: ' + e.message;
+            }
+        }
+        
+        async function fetchNow() {
+            const response = await fetch('/api/fetch-now');
+            const data = await response.json();
+            alert(data.message);
+            loadArticles();
+        }
+        
+        async function rate(e, id) {
+            if (e.target.classList.contains('star')) {
+                const rating = parseInt(e.target.dataset.rating);
+                await fetch('/api/rate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ article_id: id, rating })
+                });
+                e.target.closest('div').querySelectorAll('.star').forEach(s => {
+                    s.classList.toggle('active', parseInt(s.dataset.rating) <= rating);
+                });
+            }
+        }
+        
+        document.getElementById('searchInput').addEventListener('input', (e) => loadArticles(e.target.value));
+        loadArticles();
+    </script>
 </body>
 </html>
