@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 import requests
+import anthropic
 import os
 from dotenv import load_dotenv
 
@@ -10,7 +11,6 @@ app = FastAPI()
 
 @app.get("/")
 async def root():
-    """Serve frontend"""
     try:
         return FileResponse("frontend/index.html")
     except:
@@ -18,13 +18,9 @@ async def root():
 
 @app.get("/articles")
 async def get_articles():
-    """Get latest news with summaries"""
     try:
         api_key = os.getenv("NEWS_API_KEY")
         anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-        
-        if not api_key or not anthropic_key:
-            return JSONResponse({"error": "Missing API keys"}, status_code=500)
         
         # Fetch news
         url = "https://newsapi.org/v2/top-headlines"
@@ -36,13 +32,13 @@ async def get_articles():
         
         response = requests.get(url, params=params, timeout=10)
         data = response.json()
-        
         articles = data.get("articles", [])
         
         if not articles:
             return {"status": "success", "total": 0, "articles": []}
         
-        # Summarize with Claude via HTTP
+        # Summarize
+        client = anthropic.Anthropic(api_key=anthropic_key)
         results = []
         
         for article in articles:
@@ -52,42 +48,24 @@ async def get_articles():
             if not description or len(description) < 50:
                 continue
             
-            try:
-                # Direct HTTP request to Anthropic API
-                claude_response = requests.post(
-                    "https://api.anthropic.com/v1/messages",
-                    headers={
-                        "x-api-key": anthropic_key,
-                        "anthropic-version": "2023-06-01",
-                        "content-type": "application/json"
-                    },
-                    json={
-                        "model": "claude-opus-4-6",
-                        "max_tokens": 256,
-                        "messages": [{
-                            "role": "user",
-                            "content": f"Summarize in 80-120 words:\n\nTitle: {title}\n\nContent: {description}"
-                        }]
-                    },
-                    timeout=30
-                )
-                
-                if claude_response.status_code == 200:
-                    summary_data = claude_response.json()
-                    summary = summary_data.get("content", [{}])[0].get("text", "")
-                    
-                    if summary:
-                        results.append({
-                            "title": title,
-                            "summary": summary,
-                            "url": article.get("url"),
-                            "published_at": article.get("publishedAt"),
-                            "source": article.get("source", {}).get("name", "")
-                        })
+            message = client.messages.create(
+                model="claude-opus-4-6",
+                max_tokens=256,
+                messages=[{
+                    "role": "user",
+                    "content": f"Summarize in 80-120 words:\n\nTitle: {title}\n\nContent: {description}"
+                }]
+            )
             
-            except Exception as e:
-                print(f"Error: {e}")
-                continue
+            summary = message.content[0].text
+            
+            results.append({
+                "title": title,
+                "summary": summary,
+                "url": article.get("url"),
+                "published_at": article.get("publishedAt"),
+                "source": article.get("source", {}).get("name", "")
+            })
         
         return {
             "status": "success",
