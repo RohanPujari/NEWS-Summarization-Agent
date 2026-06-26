@@ -24,10 +24,7 @@ async def get_articles():
         anthropic_key = os.getenv("ANTHROPIC_API_KEY")
         
         if not api_key or not anthropic_key:
-            return JSONResponse({
-                "status": "error",
-                "message": "Missing API keys"
-            }, status_code=500)
+            return JSONResponse({"error": "Missing API keys"}, status_code=500)
         
         # Fetch news
         url = "https://newsapi.org/v2/top-headlines"
@@ -43,17 +40,9 @@ async def get_articles():
         articles = data.get("articles", [])
         
         if not articles:
-            return JSONResponse({
-                "status": "success",
-                "total": 0,
-                "articles": [],
-                "message": "No articles found"
-            })
+            return {"status": "success", "total": 0, "articles": []}
         
-        # Summarize with Claude
-        import anthropic
-        
-        client = anthropic.Anthropic(api_key=anthropic_key)
+        # Summarize with Claude via HTTP
         results = []
         
         for article in articles:
@@ -64,42 +53,51 @@ async def get_articles():
                 continue
             
             try:
-                message = client.messages.create(
-                    model="claude-opus-4-6",
-                    max_tokens=256,
-                    messages=[{
-                        "role": "user",
-                        "content": f"Summarize in 80-120 words:\n\nTitle: {title}\n\nContent: {description}"
-                    }]
+                # Direct HTTP request to Anthropic API
+                claude_response = requests.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": anthropic_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json"
+                    },
+                    json={
+                        "model": "claude-opus-4-6",
+                        "max_tokens": 256,
+                        "messages": [{
+                            "role": "user",
+                            "content": f"Summarize in 80-120 words:\n\nTitle: {title}\n\nContent: {description}"
+                        }]
+                    },
+                    timeout=30
                 )
                 
-                summary = message.content[0].text
-                
-                results.append({
-                    "title": title,
-                    "summary": summary,
-                    "url": article.get("url"),
-                    "published_at": article.get("publishedAt"),
-                    "source": article.get("source", {}).get("name", "")
-                })
+                if claude_response.status_code == 200:
+                    summary_data = claude_response.json()
+                    summary = summary_data.get("content", [{}])[0].get("text", "")
+                    
+                    if summary:
+                        results.append({
+                            "title": title,
+                            "summary": summary,
+                            "url": article.get("url"),
+                            "published_at": article.get("publishedAt"),
+                            "source": article.get("source", {}).get("name", "")
+                        })
             
             except Exception as e:
-                print(f"Error summarizing: {e}")
+                print(f"Error: {e}")
                 continue
         
-        return JSONResponse({
+        return {
             "status": "success",
             "total": len(results),
             "articles": results
-        })
+        }
     
     except Exception as e:
-        return JSONResponse({
-            "status": "error",
-            "message": str(e)
-        }, status_code=500)
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.get("/health")
 async def health():
-    """Health check"""
     return {"status": "ok"}
