@@ -69,6 +69,7 @@ def scheduled_fetch_news():
                     summary=summary,
                     url=article_data.get("url", ""),
                     source=article_data.get("source", {}).get("name", ""),
+                    image_url=article_data.get("urlToImage", ""),  # ADD THIS
                     published_at=datetime.fromisoformat(
                         article_data.get("publishedAt", "").replace("Z", "+00:00")
                     ) if article_data.get("publishedAt") else datetime.utcnow()

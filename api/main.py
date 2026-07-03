@@ -210,6 +210,7 @@ def get_articles(skip: int = 0, limit: int = 20, search: str = None, db: Session
                     "url": a.url,
                     "source": a.source,
                     "published_at": a.published_at.isoformat() if a.published_at else None,
+                    "image": a.image_url,  # ADD THIS
                 }
                 for a in articles
             ]
@@ -258,6 +259,10 @@ def fetch_now(db: Session = Depends(get_db)):
             
             title = article_data.get("title", "")
             description = article_data.get("description", "")
+            image = article_data.get("urlToImage", "")
+
+            print(f"[DEBUG] Title: {title[:50]}")
+            print(f"[DEBUG] Image: {image}")  # ADD THIS
             
             if not description or len(description) < 50:
                 continue
@@ -269,12 +274,11 @@ def fetch_now(db: Session = Depends(get_db)):
                 summary=summary,
                 url=article_data.get("url", ""),
                 source=article_data.get("source", {}).get("name", ""),
+                image_url=image,
                 published_at=datetime.fromisoformat(article_data.get("publishedAt", "").replace("Z", "+00:00")) if article_data.get("publishedAt") else datetime.utcnow()
             )
-            
             db.add(article)
             count += 1
-        
         db.commit()
         return {"status": "success", "message": f"Fetched {count} articles"}
     except Exception as e:

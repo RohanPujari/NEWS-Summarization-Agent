@@ -22,6 +22,7 @@ class Article(Base):
     summary = Column(Text)
     url = Column(String(1000), unique=True)
     source = Column(String(200))
+    image_url = Column(String(1000), nullable=True)  # ADD THIS
     published_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
