@@ -295,53 +295,53 @@
         }
         
         async function loadArticles(search = '') {
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('articles').innerHTML = '';
-            document.getElementById('empty').style.display = 'none';
-            
-            try {
-                const url = `/api/articles${search ? '?search=' + encodeURIComponent(search) : ''}`;
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                document.getElementById('loading').style.display = 'none';
-                
-                if (!data.articles || data.articles.length === 0) {
-                    document.getElementById('empty').style.display = 'block';
-                    return;
-                }
-                
-                const html = data.articles.map((a, idx) => {
-                    const isBreaking = idx % 7 === 0;
-                    const imageUrl = a.image ? a.image : 'linear-gradient(135deg, #0066cc 0%, #0052a3 100%)';
-                    
-                    return `
-                        <div class="article-card ${isBreaking ? 'breaking' : ''}">
-                            <div class="image-container" style="background-image: url('${imageUrl}'); background-size: cover; background-position: center;">
-                                <div class="article-title-overlay">
-                                    ${isBreaking ? '<p class="badge-breaking">Breaking</p>' : ''}
-                                    <p class="article-title">${escapeHtml(a.title)}</p>
-                                </div>
-                            </div>
-                            <div class="article-content">
-                                <div class="article-meta">
-                                    <span class="source">${escapeHtml(a.source || 'NEWS')}</span>
-                                    <span class="time">${formatDate(a.published_at)}</span>
-                                </div>
-                                <p class="summary">${escapeHtml(a.summary)}</p>
-                                <div class="rating" onclick="rateArticle(event, ${a.id})">
-                                    ${[1,2,3,4,5].map(i => `<span class="star" data-rating="${i}">★</span>`).join('')}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-                document.getElementById('articles').innerHTML = html;
-            } catch (e) {
-                document.getElementById('loading').innerHTML = '❌ Error: ' + e.message;
-            }
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('articles').innerHTML = '';
+    document.getElementById('empty').style.display = 'none';
+    
+    try {
+        const url = `/api/articles${search ? '?search=' + encodeURIComponent(search) : ''}`;
+        const response = await fetch(url);
+        const data = await response.json();  // ADD await HERE
+        
+        document.getElementById('loading').style.display = 'none';
+        
+        if (!data.articles || data.articles.length === 0) {
+            document.getElementById('empty').style.display = 'block';
+            return;
         }
+        
+        const html = data.articles.map((a, idx) => {
+            const isBreaking = idx % 7 === 0;
+            const imageUrl = a.image ? a.image : 'linear-gradient(135deg, #0066cc 0%, #0052a3 100%)';
+            
+            return `
+                <div class="article-card ${isBreaking ? 'breaking' : ''}">
+                    <div class="image-container" style="background-image: url('${imageUrl}'); background-size: cover; background-position: center;">
+                        <div class="article-title-overlay">
+                            ${isBreaking ? '<p class="badge-breaking">Breaking</p>' : ''}
+                            <p class="article-title">${escapeHtml(a.title)}</p>
+                        </div>
+                    </div>
+                    <div class="article-content">
+                        <div class="article-meta">
+                            <span class="source">${escapeHtml(a.source || 'NEWS')}</span>
+                            <span class="time">${formatDate(a.published_at)}</span>
+                        </div>
+                        <p class="summary">${escapeHtml(a.summary)}</p>
+                        <div class="rating" onclick="rateArticle(event, ${a.id})">
+                            ${[1,2,3,4,5].map(i => `<span class="star" data-rating="${i}">★</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        document.getElementById('articles').innerHTML = html;
+    } catch (e) {
+        document.getElementById('loading').innerHTML = '❌ Error: ' + e.message;
+    }
+}
         
         async function fetchNow() {
             try {
