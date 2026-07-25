@@ -150,10 +150,10 @@ def summarize_with_claude(title: str, content: str) -> str: #Using Groq API for 
         
         message = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            max_tokens=300,
+            max_tokens=500,
             messages=[{
                 "role": "user",
-                "content": f"Write a 60-65 word summary:\n\nTitle: {title}\n\nContent: {content}"
+                "content": f"Write EXACTLY 60-65 words. Be detailed and comprehensive:\n\nTitle: {title}\n\nContent: {content}\n\nSummary (must be 60-65 words)"
             }]
         )
         
