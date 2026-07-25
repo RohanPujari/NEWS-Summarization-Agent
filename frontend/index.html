@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- BETTER HEADING
+<header>
+    <h1>📰 News in 60 Seconds</h1>
+    <p>Get trusted news summaries daily</p>
+  </header> -->
+  <!-- SEARCH + FETCH -->
+  <!-- CATEGORY FILTERS -->
+  
+  <!-- ARTICLES GRID -->
+  <div class="articles"></div>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>News Summarizer - Trusted News</title>
@@ -240,6 +250,7 @@
             border: 1px solid var(--card-border);
         }
         
+
         @media (max-width: 600px) {
             header { 
                 flex-direction: column;
@@ -252,15 +263,47 @@
             .image-container { height: 200px; }
             .article-title { font-size: 14px; }
         }
+        .category-filter {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            overflow-x: auto;
+            padding: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .category {
+            padding: 8px 16px;
+            border: 2px solid var(--accent-blue);
+            background: var(--card-bg);
+            color: var(--accent-blue);
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .category.active {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .category:hover {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <div class="header-left">
-                <h1>📰 News Summarizer</h1>
-                <p class="subtitle">AI-powered summaries from trusted sources</p>
-                <p class="source-trust">Powered by Claude AI</p>
+                <h1>📰 News in 60 Seconds</h1>
+                <p class="subtitle">Get trusted news summaries daily</p>
+                <p class="source-trust">No BS. Just facts.</p>
             </div>
             <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
         </header>
@@ -268,6 +311,15 @@
         <div class="controls">
             <input type="text" id="searchInput" placeholder="Search articles...">
             <button onclick="fetchNow()">🔄 Fetch Now</button>
+        </div>
+        <div class="category-filter">
+            <button class="category active" onclick="filterByCategory('all')">All</button>
+            <button class="category" onclick="filterByCategory('sports')">Sports</button>
+            <button class="category" onclick="filterByCategory('finance')">Finance</button>
+            <button class="category" onclick="filterByCategory('technology')">Tech</button>
+            <button class="category" onclick="filterByCategory('entertainment')">Entertainment</button>
+            <button class="category" onclick="filterByCategory('health')">Health</button>
+            <button class="category" onclick="filterByCategory('politics')">Politics</button>
         </div>
         
         <div id="loading" class="loading" style="display: none;">⏳ Loading articles...</div>
@@ -294,15 +346,20 @@
             document.querySelector('.theme-toggle').textContent = '☀️ Light';
         }
         
-        async function loadArticles(search = '') {
+        async function loadArticles(search = '', category = '') {
     document.getElementById('loading').style.display = 'block';
     document.getElementById('articles').innerHTML = '';
     document.getElementById('empty').style.display = 'none';
     
     try {
-        const url = `/api/articles${search ? '?search=' + encodeURIComponent(search) : ''}`;
+        let url = `/api/articles`;
+        const params = [];
+        if (search) params.push('search=' + encodeURIComponent(search));
+        if (category && category !== 'all') params.push('category=' + encodeURIComponent(category));
+        if (params.length > 0) url += '?' + params.join('&');
+        
         const response = await fetch(url);
-        const data = await response.json();  // ADD await HERE
+        const data = await response.json();
         
         document.getElementById('loading').style.display = 'none';
         
@@ -387,12 +444,32 @@
             return date.toLocaleDateString();
         }
         
+      
+        
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-        
+        // Category filter
+        let selectedCategory = 'all';
+
+        function filterByCategory(category) {
+            selectedCategory = category;
+            
+            // Remove active from all
+            document.querySelectorAll('.category').forEach(b => b.classList.remove('active'));
+            
+            // Add active to clicked
+            event.target.classList.add('active');
+            
+            // Load articles
+            if (category === 'all') {
+                loadArticles();
+            } else {
+                loadArticles('', category);
+            }
+        }
         document.getElementById('searchInput').addEventListener('input', (e) => {
             loadArticles(e.target.value);
         });

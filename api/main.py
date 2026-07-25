@@ -231,7 +231,7 @@ def root():
         return {"message": "News API"}
 
 @app.get("/api/articles")
-def get_articles(skip: int = 0, limit: int = 20, search: str = None, db: Session = Depends(get_db)):
+def get_articles(skip: int = 0, limit: int = 20, search: str = None, category: str = None, db: Session = Depends(get_db)):
     try:
         query = db.query(Article).order_by(Article.published_at.desc())
         
@@ -240,6 +240,10 @@ def get_articles(skip: int = 0, limit: int = 20, search: str = None, db: Session
                 (Article.title.ilike(f"%{search}%")) |
                 (Article.summary.ilike(f"%{search}%"))
             )
+        
+        # ADD THIS: Filter by category
+        if category and category != "all":
+            query = query.filter(Article.category == category)
         
         total = query.count()
         articles = query.offset(skip).limit(limit).all()
@@ -254,8 +258,9 @@ def get_articles(skip: int = 0, limit: int = 20, search: str = None, db: Session
                     "summary": a.summary,
                     "url": a.url,
                     "source": a.source,
+                    "category": a.category,  # ADD THIS
                     "published_at": a.published_at.isoformat() if a.published_at else None,
-                    "image": a.image_url,  # ADD THIS
+                    "image": a.image_url,
                 }
                 for a in articles
             ]
@@ -281,6 +286,68 @@ def rate_article(article_id: int, rating: int, comment: str = None, db: Session 
     except Exception as e:
         db.rollback()
         return {"status": "error", "message": str(e)}
+
+def categorize_article(title: str, summary: str) -> str:
+    """Detect article category based on keywords"""
+    text = (title + " " + summary).lower()
+    
+    # More comprehensive keywords
+    categories = {
+        "sports": [
+            "sport", "football", "basketball", "tennis", "goal", "game", 
+            "player", "team", "coach", "nfl", "nba", "mlb", "soccer",
+            "baseball", "hockey", "league", "championship", "match",
+            "tournament", "winning", "loss", "score", "playoff"
+        ],
+        "entertainment": [
+            "movie", "film", "actor", "actress", "music", "celebrity", 
+            "show", "award", "oscars", "grammy", "hollywood", "netflix",
+            "singer", "band", "concert", "album", "director", "producer",
+            "broadway", "theater", "comedy", "drama"
+        ],
+        "finance": [
+            "stock", "market", "crypto", "bitcoin", "ethereum", "investment",
+            "bank", "dollar", "economy", "economic", "trading", "trader",
+            "financial", "earnings", "revenue", "profit", "loss", "ipo",
+            "dow jones", "nasdaq", "sp 500", "fed", "interest rate"
+        ],
+        "technology": [
+            "tech", "software", "app", "ai", "artificial intelligence",
+            "robot", "gadget", "apple", "microsoft", "google", "amazon",
+            "facebook", "instagram", "twitter", "tesla", "spacex",
+            "computer", "internet", "cyber", "data", "algorithm",
+            "machine learning", "blockchain", "metaverse"
+        ],
+        "health": [
+            "health", "medical", "doctor", "nurse", "hospital", "disease",
+            "virus", "covid", "vaccine", "pandemic", "medication",
+            "treatment", "patient", "cancer", "heart", "mental",
+            "fitness", "exercise", "diet", "nutrition", "wellness"
+        ],
+        "politics": [
+            "trump", "biden", "harris", "republican", "democrat",
+            "election", "vote", "voting", "congress", "senate",
+            "government", "president", "governor", "mayor", "parliament",
+            "law", "bill", "legislation", "policy", "political",
+            "campaign", "rally", "impeach"
+        ],
+    }
+    
+    # Score each category
+    scores = {}
+    for category, keywords in categories.items():
+        score = sum(1 for keyword in keywords if keyword in text)
+        scores[category] = score
+    
+    # Return category with highest score
+    best_category = max(scores, key=scores.get)
+    
+    # If no keyword found, return general
+    if scores[best_category] == 0:
+        return "general"
+    
+    return best_category
+
 
 @app.get("/api/fetch-now")
 def fetch_now(db: Session = Depends(get_db)):
@@ -313,11 +380,14 @@ def fetch_now(db: Session = Depends(get_db)):
                 continue
             
             summary = summarize_with_claude(title, description)
-            
+
+            category = categorize_article(title, summary)
+
             article = Article(
                 title=title,
                 summary=summary,
                 url=article_data.get("url", ""),
+                category=category,
                 source=article_data.get("source", {}).get("name", ""),
                 image_url=image,
                 published_at=datetime.fromisoformat(article_data.get("publishedAt", "").replace("Z", "+00:00")) if article_data.get("publishedAt") else datetime.utcnow()
