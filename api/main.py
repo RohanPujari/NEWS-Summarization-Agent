@@ -92,6 +92,7 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from typing import List
+from groq import Groq
 
 load_dotenv()
 
@@ -135,44 +136,88 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-def summarize_with_claude(title: str, content: str) -> str:
+
+
+def summarize_with_claude(title: str, content: str) -> str: #Using Groq API for larger summaries
     try:
-        api_key = os.getenv("ANTHROPIC_API_KEY")
+        api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
-            return "No API key configured"
+            return "No API key"
         
-        print(f"[Claude] Summarizing: {title[:50]}...")
+        client = Groq(api_key=api_key)
         
-        response = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json"
-            },
-            json={
-                "model": "claude-opus-4-6",
-                "max_tokens": 200,  # Reduced from 500
-                "messages": [{
-                    "role": "user",
-                    "content": f"Create a brief 60-65 word summary:\n\nTitle: {title}\n\nContent: {content}"
-                }]
-            },
-            timeout=30
+        print(f"[Groq] Summarizing: {title[:50]}...")
+        
+        message = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            max_tokens=300,
+            messages=[{
+                "role": "user",
+                "content": f"Write a 60-65 word summary:\n\nTitle: {title}\n\nContent: {content}"
+            }]
         )
         
-        if response.status_code == 200:
-            data = response.json()
-            summary = data.get("content", [{}])[0].get("text", "")
-            print(f"[Claude] Generated {len(summary.split())} word summary")
-            return summary
-        else:
-            print(f"[Claude Error] Status {response.status_code}")
-            return f"Error: {response.status_code}"
+        summary = message.choices[0].message.content
+        print(f"[Groq] Generated {len(summary.split())} word summary")
+        return summary
     
     except Exception as e:
-        print(f"[Claude ERROR] {str(e)}")
-        return f"Error: {str(e)}"
+        print(f"[Groq Error] {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return "Error generating summary"
+
+
+# def summarize_with_claude(title: str, content: str) -> str:  # For smaller Summaries using first 60-65 words of content
+#     try:
+#         # Temporary: Just return first 60-65 words of content
+#         words = content.split()[:65]
+#         summary = " ".join(words) + "..."
+#         print(f"[Fallback] Using article description as summary")
+#         return summary
+#     except Exception as e:
+#         return "Summary unavailable"
+
+
+# def summarize_with_claude(title: str, content: str) -> str:  # For larger Summaries using Claude API
+#     try:
+#         api_key = os.getenv("ANTHROPIC_API_KEY")
+#         if not api_key:
+#             return "No API key configured"
+        
+#         print(f"[Claude] Summarizing: {title[:50]}...")
+        
+#         response = requests.post(
+#             "https://api.anthropic.com/v1/messages",
+#             headers={
+#                 "x-api-key": api_key,
+#                 "anthropic-version": "2023-06-01",
+#                 "content-type": "application/json"
+#             },
+#             json={
+#                 "model": "claude-opus-4-6",
+#                 "max_tokens": 200,  # Reduced from 500
+#                 "messages": [{
+#                     "role": "user",
+#                     "content": f"Create a brief 60-65 word summary:\n\nTitle: {title}\n\nContent: {content}"
+#                 }]
+#             },
+#             timeout=30
+#         )
+        
+#         if response.status_code == 200:
+#             data = response.json()
+#             summary = data.get("content", [{}])[0].get("text", "")
+#             print(f"[Claude] Generated {len(summary.split())} word summary")
+#             return summary
+#         else:
+#             print(f"[Claude Error] Status {response.status_code}")
+#             print(f"[Claude Error] Response: {response.text}")
+#             return f"Error: {response.status_code}"
+    
+#     except Exception as e:
+#         print(f"[Claude ERROR] {str(e)}")
+#         return f"Error: {str(e)}"
 
 @app.get("/health")
 def health():
