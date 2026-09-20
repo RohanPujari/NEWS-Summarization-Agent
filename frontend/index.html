@@ -352,7 +352,12 @@
     document.getElementById('empty').style.display = 'none';
     
     try {
-        let url = `/api/articles`;
+        const API_BASE_URL =
+        window.location.port === '3000'
+        ? 'http://127.0.0.1:8000'
+        : '';
+
+        let url = `${API_BASE_URL}/api/articles`;
         const params = [];
         if (search) params.push('search=' + encodeURIComponent(search));
         if (category && category !== 'all') params.push('category=' + encodeURIComponent(category));
@@ -437,10 +442,21 @@
             const date = new Date(dateString);
             const now = new Date();
             const diff = now - date;
+
+            const minutes = Math.floor(diff / 60000);
             const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            const weeks = Math.floor(diff / 604800000);
+            const months = Math.floor(diff / 2592000000);
+            const years = Math.floor(diff / 31536000000);
             
-            if (hours < 1) return 'Just now';
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
             if (hours < 24) return `${hours}h ago`;
+            if (days < 7) return `${days}d ago`;
+            if (weeks < 4) return `${weeks}w ago`;
+            if (months < 12) return `${months}mo ago`;
+            // return `${years}y ago`;
             return date.toLocaleDateString();
         }
         
